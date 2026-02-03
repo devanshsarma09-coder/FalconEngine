@@ -1,27 +1,37 @@
+
 // src/Hooks.cpp
 #include "Hooks.h"
 #include "MovementHandler.h"
 #include "InputHandler.h"
 #include "AIPathing.h"
-
 namespace FalconEngine {
+    static RE::FormID currentShipID = 0;
+    static RE::ObjectRefHandle cachedShip;
+    void Hooks::SetShipID(RE::FormID a_id) {
+        currentShipID = a_id;
+        cachedShip = {}; 
+    }
+    RE::FormID Hooks::GetShipID() {
+        return currentShipID;
+    }
     void Hooks::Update() {
-        _Update(); // Execute original game code first
-
+        _Update();
+        if (currentShipID == 0) return;
+        auto ship = cachedShip.get();
+        if (!ship) {
+            auto found = RE::TESForm::LookupByID<RE::TESObjectREFR>(currentShipID);
+            if (found) cachedShip = found->GetHandle();
+            return;
+        }
         auto player = RE::PlayerCharacter::GetSingleton();
-        auto dragon = RE::TESForm::LookupByID<RE::TESObjectREFR>(0x00012345);
-
-        if (player && dragon) {
+        if (player && ship) {
             HandleInput();
-            ApplyMovement(player, dragon);
-            UpdateCrew(dragon);
+            ApplyMovement(player, ship.get());
+            UpdateCrew(ship.get());
         }
     }
-
     void Hooks::Install() {
-        // REL::ID(35551) is the Main Loop for SE/AE
         REL::Relocation<uintptr_t> target{ REL::ID(35551), 0x11F }; 
-        
         auto& trampoline = SKSE::GetTrampoline();
         _Update = trampoline.write_call<5>(target.address(), reinterpret_cast<uintptr_t>(Update));
     }
