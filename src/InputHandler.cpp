@@ -1,3 +1,4 @@
+// src/InputHandler.cpp
 #include "InputHandler.h"
 namespace FalconEngine {
     RE::NiPoint3 localPos = { 0.0f, 0.0f, 10.0f };
@@ -11,5 +12,10 @@ namespace FalconEngine {
         if (input && input->IsActivateSecondaryDown()) {
             localPos.y -= speed * delta;
         }
+        if (input && input->IsMoveButtonDown()) { // A/D keys usually mapped to MoveLeft/Right
+           // Logic for Strafe can be added here
+        }
     }
 }
+
+
