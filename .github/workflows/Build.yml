@@ -16,20 +16,29 @@ jobs:
       - name: Install Dependencies
         shell: pwsh
         run: |
-          # Define the root of your repo
-          $repoRoot = "${{ github.workspace }}"
+          # Find where vcpkg.json actually is
+          $manifestFile = Get-ChildItem -Recurse -Filter "vcpkg.json" | Select-Object -First 1
+          if (-not $manifestFile) {
+              Write-Error "Could not find vcpkg.json anywhere in the repository!"
+              exit 1
+          }
+          $manifestDir = $manifestFile.Directory.FullName
+          Write-Host "Found vcpkg.json in: $manifestDir"
           
-          # Force vcpkg to install using the manifest in your repo
+          # Run install from that directory
           & "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe" install `
-            --x-manifest-root="$repoRoot" `
+            --x-manifest-root="$manifestDir" `
             --vcpkg-root="$env:VCPKG_INSTALLATION_ROOT" `
             --triplet x64-windows-static-md
 
       - name: Build with CMake
         shell: pwsh
         run: |
-          $repoRoot = "${{ github.workspace }}"
-          cmake -B build -S . `
+          # Find the directory containing CMakeLists.txt
+          $cmakeFile = Get-ChildItem -Recurse -Filter "CMakeLists.txt" | Select-Object -First 1
+          $sourceDir = $cmakeFile.Directory.FullName
+          
+          cmake -B build -S "$sourceDir" `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static-md `
@@ -41,4 +50,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FalconEngine-Plugin
-          path: build/Release/FalconEngine.dll
+          path: "**/build/Release/FalconEngine.dll"
