@@ -1,8 +1,12 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.24)
 project(FalconEngine VERSION 0.1.0 LANGUAGES CXX)
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Find the CommonLib package provided by vcpkg
 find_package(commonlibsse-ng CONFIG REQUIRED)
+
 add_library(${PROJECT_NAME} SHARED
     "src/Main.cpp"
     "src/Hooks.cpp"
@@ -11,8 +15,13 @@ add_library(${PROJECT_NAME} SHARED
     "src/InputHandler.cpp"
     "src/AIPathing.cpp"
 )
+
+# Link against CommonLib
 target_link_libraries(${PROJECT_NAME} PRIVATE commonlibsse-ng::commonlibsse-ng)
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
+
+# Crucial for cloud builds: Define the target version
+target_compile_definitions(${PROJECT_NAME} PRIVATE SKSE_SUPPORT_XSE)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES 
     SUFFIX ".dll"
     MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
