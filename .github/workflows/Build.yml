@@ -16,30 +16,33 @@ jobs:
       - name: Download Build Dependencies
         shell: pwsh
         run: |
-          # Download CharmedBaryon's CommonLibSSE-NG directly as a ZIP
+          # Use TLS 1.2 for downloads
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+          # Download CommonLibSSE-NG
           Invoke-WebRequest -Uri "https://github.com/CharmedBaryon/CommonLibSSE-NG/archive/refs/heads/main.zip" -OutFile "commonlib.zip"
-          Expand-Archive -Path "commonlib.zip" -DestinationPath "."
+          Expand-Archive -Path "commonlib.zip" -DestinationPath "$pwd"
           Rename-Item -Path "CommonLibSSE-NG-main" -NewName "CommonLibSSE-NG"
 
-          # Download spdlog (Required by CommonLib)
-          Invoke-WebRequest -Uri "https://github.com/gabime/spdlog/archive/refs/heads/v1.x.zip" -OutFile "spdlog.zip"
-          Expand-Archive -Path "spdlog.zip" -DestinationPath "."
-          Rename-Item -Path "spdlog-1.x" -NewName "spdlog"
+          # Download spdlog
+          Invoke-WebRequest -Uri "https://github.com/gabime/spdlog/archive/refs/tags/v1.12.0.zip" -OutFile "spdlog.zip"
+          Expand-Archive -Path "spdlog.zip" -DestinationPath "$pwd"
+          Rename-Item -Path "spdlog-1.12.0" -NewName "spdlog"
 
-          # Download fmt (Required by spdlog)
-          Invoke-WebRequest -Uri "https://github.com/fmtlib/fmt/archive/refs/tags/10.2.1.zip" -OutFile "fmt.zip"
-          Expand-Archive -Path "fmt.zip" -DestinationPath "."
-          Rename-Item -Path "fmt-10.2.1" -NewName "fmt"
+          # Download fmt
+          Invoke-WebRequest -Uri "https://github.com/fmtlib/fmt/archive/refs/tags/10.1.1.zip" -OutFile "fmt.zip"
+          Expand-Archive -Path "fmt.zip" -DestinationPath "$pwd"
+          Rename-Item -Path "fmt-10.1.1" -NewName "fmt"
 
       - name: Build with CMake
         shell: pwsh
         run: |
-          # Run CMake with absolute local paths to avoid any searching
+          $dir = Get-Location
           cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCOMMONLIB_PATH="$pwd/CommonLibSSE-NG" `
-            -DSPDLOG_PATH="$pwd/spdlog" `
-            -DFMT_PATH="$pwd/fmt"
+            -DCOMMONLIB_PATH="$dir/CommonLibSSE-NG" `
+            -DSPDLOG_PATH="$dir/spdlog" `
+            -DFMT_PATH="$dir/fmt"
           
           cmake --build build --config Release
 
