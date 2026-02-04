@@ -2,6 +2,7 @@
 #include "MovementHandler.h"
 #include "InputHandler.h"
 #include "AIPathing.h"
+#include "SKSE/SKSE.h"
 
 namespace FalconEngine {
     static RE::FormID currentShipID = 0;
@@ -17,7 +18,10 @@ namespace FalconEngine {
     }
 
     void Hooks::Update() {
-        _Update();
+        if (_Update) {
+            _Update();
+        }
+
         if (currentShipID == 0) return;
 
         auto ship = cachedShip.get();
@@ -28,7 +32,7 @@ namespace FalconEngine {
         }
 
         auto player = RE::PlayerCharacter::GetSingleton();
-        if (player && ship) {
+        if (player && ship.get()) {
             HandleInput();
             ApplyMovement(player, ship.get());
             UpdateCrew(ship.get());
@@ -36,7 +40,7 @@ namespace FalconEngine {
     }
 
     void Hooks::Install() {
-        // Main Loop Update Hook
+        // Using REL::VariantID for better cross-version support
         REL::Relocation<uintptr_t> target{ REL::ID(35551), 0x11F }; 
         auto& trampoline = SKSE::GetTrampoline();
         _Update = trampoline.write_call<5>(target.address(), reinterpret_cast<uintptr_t>(Update));
