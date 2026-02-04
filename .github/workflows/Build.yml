@@ -13,18 +13,26 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Configure Git
+      - name: Manually Download CommonLib
+        shell: pwsh
         run: |
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
-          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+          # Download the source ZIP directly
+          Invoke-WebRequest -Uri "https://github.com/p13373/CommonLibSSE-NG/archive/refs/heads/main.zip" -OutFile "commonlib.zip"
+          
+          # Extract it
+          Expand-Archive -Path "commonlib.zip" -DestinationPath "."
+          
+          # Rename the extracted folder to something predictable
+          Rename-Item -Path "CommonLibSSE-NG-main" -NewName "CommonLibSSE-NG"
 
       - name: Build with CMake
         shell: pwsh
         run: |
-          # Create build directory and configure
-          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+          # Point CMake to the folder we just downloaded
+          cmake -B build -S . `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCOMMONLIB_LOCAL_PATH="$pwd/CommonLibSSE-NG"
           
-          # Compile the project
           cmake --build build --config Release
 
       - name: Upload DLL
