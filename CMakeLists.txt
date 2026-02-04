@@ -13,7 +13,7 @@ else()
     include(FetchContent)
     FetchContent_Declare(
         commonlibsse-ng
-        GIT_REPOSITORY "https://github.com/p13373/CommonLibSSE-NG.git"
+        GIT_REPOSITORY "https://github.com/CharmedBaryon/CommonLibSSE-NG?hl=en-IN"
         GIT_TAG        "main"
     )
     FetchContent_MakeAvailable(commonlibsse-ng)
@@ -43,3 +43,4 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     SUFFIX ".dll"
     MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 )
+
