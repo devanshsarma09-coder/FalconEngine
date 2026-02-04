@@ -6,15 +6,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 
-# Automatically download CommonLibSSE-NG
+# Ensure we don't prompt for credentials
+set(FETCHCONTENT_QUIET OFF)
+
 FetchContent_Declare(
     commonlibsse-ng
-    GIT_REPOSITORY https://github.com/p13373/CommonLibSSE-NG.git
-    GIT_TAG        main
+    GIT_REPOSITORY "https://github.com/p13373/CommonLibSSE-NG.git"
+    GIT_TAG        "main"
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
 )
 
-# This flag is required to make CommonLib build correctly without vcpkg
+# Mandatory flags for CommonLibSSE-NG to build without a package manager
 set(SKYRIM_AE ON CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(commonlibsse-ng)
 
@@ -27,10 +32,15 @@ add_library(${PROJECT_NAME} SHARED
     "src/AIPathing.cpp"
 )
 
-# Link the downloaded library
 target_link_libraries(${PROJECT_NAME} PRIVATE commonlibsse-ng::commonlibsse-ng)
 
-# Ensure the DLL suffix is correct
+# Target definitions
+target_compile_definitions(${PROJECT_NAME} PRIVATE 
+    SKSE_SUPPORT_XSE
+    UNICODE
+    _UNICODE
+)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES 
     SUFFIX ".dll"
     MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
