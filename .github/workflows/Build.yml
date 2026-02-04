@@ -16,26 +16,19 @@ jobs:
       - name: Install Dependencies
         shell: pwsh
         run: |
-          # Find the manifest
-          $manifestFile = Get-ChildItem -Recurse -Filter "vcpkg.json" | Select-Object -First 1
-          $manifestDir = $manifestFile.Directory.FullName
+          # Create a local registry to bypass the 128 Git error
+          $repoRoot = "${{ github.workspace }}"
           
-          # Disable shallow cloning for registries to prevent Error 128
-          $env:VCPKG_POLICY_ALLOW_RESTRICTED_HEADERS = "1"
-          
-          # Force vcpkg to install
+          # Force vcpkg to use its own internal baseline instead of a remote one
           & "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe" install `
-            --x-manifest-root="$manifestDir" `
+            --x-manifest-root="$repoRoot" `
             --vcpkg-root="$env:VCPKG_INSTALLATION_ROOT" `
             --triplet x64-windows-static-md
 
       - name: Build with CMake
         shell: pwsh
         run: |
-          $cmakeFile = Get-ChildItem -Recurse -Filter "CMakeLists.txt" | Select-Object -First 1
-          $sourceDir = $cmakeFile.Directory.FullName
-          
-          cmake -B build -S "$sourceDir" `
+          cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static-md `
