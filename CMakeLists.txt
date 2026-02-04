@@ -4,8 +4,10 @@ project(FalconEngine VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Force Skyrim AE
+# Force Skyrim AE and Disable Tests to avoid Catch2 requirement
 set(SKYRIM_AE ON CACHE BOOL "" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(COMMONLIB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 # Convert Windows paths to CMake-friendly forward slashes
 file(TO_CMAKE_PATH "${FMT_PATH}" SAFE_FMT_PATH)
@@ -15,21 +17,17 @@ file(TO_CMAKE_PATH "${COMMONLIB_PATH}" SAFE_COMMONLIB_PATH)
 # 1. FMT
 message(STATUS "Pre-configuring FMT from: ${SAFE_FMT_PATH}")
 add_subdirectory(${SAFE_FMT_PATH} ${CMAKE_BINARY_DIR}/fmt EXCLUDE_FROM_ALL)
-list(APPEND CMAKE_PREFIX_PATH "${SAFE_FMT_PATH}")
 
 # 2. SPDLOG
 message(STATUS "Pre-configuring SPDLOG from: ${SAFE_SPDLOG_PATH}")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "" FORCE)
 add_subdirectory(${SAFE_SPDLOG_PATH} ${CMAKE_BINARY_DIR}/spdlog EXCLUDE_FROM_ALL)
-list(APPEND CMAKE_PREFIX_PATH "${SAFE_SPDLOG_PATH}")
 
-# 3. MOCKING find_package (With safe forward slashes)
-file(WRITE "${CMAKE_BINARY_DIR}/spdlog/spdlogConfig.cmake" 
-    "include_directories(\"${SAFE_SPDLOG_PATH}/include\")\nadd_library(spdlog::spdlog ALIAS spdlog)\nset(spdlog_FOUND TRUE)"
-)
-file(WRITE "${CMAKE_BINARY_DIR}/fmt/fmtConfig.cmake" 
-    "include_directories(\"${SAFE_FMT_PATH}/include\")\nadd_library(fmt::fmt ALIAS fmt)\nset(fmt_FOUND TRUE)"
-)
+# 3. MOCKING find_package (Minimalist approach)
+# We just need to tell CommonLib that these are FOUND. 
+# Since we already ran add_subdirectory, the targets exist in memory.
+file(WRITE "${CMAKE_BINARY_DIR}/spdlog/spdlogConfig.cmake" "set(spdlog_FOUND TRUE)")
+file(WRITE "${CMAKE_BINARY_DIR}/fmt/fmtConfig.cmake" "set(fmt_FOUND TRUE)")
 
 # Add these fake config paths to the search list
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/spdlog")
@@ -49,6 +47,7 @@ add_library(${PROJECT_NAME} SHARED
     "src/AIPathing.cpp"
 )
 
+# Use the namespaced targets provided by the subdirectories
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     commonlibsse-ng::commonlibsse-ng
     spdlog::spdlog
