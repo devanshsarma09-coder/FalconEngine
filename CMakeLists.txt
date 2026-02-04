@@ -8,31 +8,33 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SKYRIM_AE ON CACHE BOOL "" FORCE)
 
 # 1. FMT
-message(STATUS "Configuring FMT from: ${FMT_PATH}")
+message(STATUS "Pre-configuring FMT from: ${FMT_PATH}")
 add_subdirectory(${FMT_PATH} ${CMAKE_BINARY_DIR}/fmt EXCLUDE_FROM_ALL)
-set(fmt_DIR ${CMAKE_BINARY_DIR}/fmt CACHE PATH "" FORCE)
+# Add FMT to the search path so find_package works
+list(APPEND CMAKE_PREFIX_PATH "${FMT_PATH}")
+set(fmt_DIR "${CMAKE_BINARY_DIR}/fmt" CACHE PATH "" FORCE)
 
 # 2. SPDLOG
-message(STATUS "Configuring SPDLOG from: ${SPDLOG_PATH}")
+message(STATUS "Pre-configuring SPDLOG from: ${SPDLOG_PATH}")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "" FORCE)
 add_subdirectory(${SPDLOG_PATH} ${CMAKE_BINARY_DIR}/spdlog EXCLUDE_FROM_ALL)
-set(spdlog_DIR ${CMAKE_BINARY_DIR}/spdlog CACHE PATH "" FORCE)
+# Add SPDLOG to the search path
+list(APPEND CMAKE_PREFIX_PATH "${SPDLOG_PATH}")
+set(spdlog_DIR "${CMAKE_BINARY_DIR}/spdlog" CACHE PATH "" FORCE)
 
-# 3. TRICK COMMONLIB: Define the targets it wants so find_package doesn't run
-# We create "alias" targets so CommonLib thinks it found the packages
-if(NOT TARGET spdlog::spdlog)
-    add_library(spdlog::spdlog ALIAS spdlog)
-endif()
-if(NOT TARGET fmt::fmt)
-    add_library(fmt::fmt ALIAS fmt)
-endif()
+# 3. MOCKING find_package
+# We create a fake "spdlogConfig.cmake" so find_package(spdlog) returns success instantly
+file(WRITE "${CMAKE_BINARY_DIR}/spdlog/spdlogConfig.cmake" "include_directories(\"${SPDLOG_PATH}/include\")\nadd_library(spdlog::spdlog ALIAS spdlog)")
+file(WRITE "${CMAKE_BINARY_DIR}/fmt/fmtConfig.cmake" "include_directories(\"${FMT_PATH}/include\")\nadd_library(fmt::fmt ALIAS fmt)")
 
-# We also need to mock find_package for CommonLib
-set(spdlog_FOUND TRUE)
-set(fmt_FOUND TRUE)
+# Add these fake config paths to the search list
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/spdlog")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/fmt")
 
 # 4. CommonLibSSE-NG
 message(STATUS "Configuring CommonLib from: ${COMMONLIB_PATH}")
+# Disable CommonLib's internal dependency search if possible
+set(COMMONLIB_EXTERNAL_DEPENDENCIES OFF CACHE BOOL "" FORCE) 
 add_subdirectory(${COMMONLIB_PATH} ${CMAKE_BINARY_DIR}/commonlib EXCLUDE_FROM_ALL)
 
 add_library(${PROJECT_NAME} SHARED
