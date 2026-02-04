@@ -9,19 +9,23 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Run vcpkg
+        uses: lukka/run-vcpkg@v11
         with:
-          submodules: recursive
+          vcpkgJsonGlob: 'vcpkg.json'
 
-      - name: Setup CMake
-        uses: jwlawrence/actions-setup-cmake@v2
+      - name: Build with CMake
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: 'default'
+          buildPreset: 'default'
 
-      - name: Build Plugin
-        run: |
-          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --config Release
-
-      - name: Upload Artifact
+      - name: Upload DLL
         uses: actions/upload-artifact@v4
         with:
-          name: FalconEngine-DLL
-          path: build/Release/FalconEngine.dll
+          name: FalconEngine-Plugin
+          path: build/Release/FalconEngine.dl
