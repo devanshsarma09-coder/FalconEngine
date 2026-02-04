@@ -13,22 +13,22 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Manually Download CommonLib
+      - name: Manually Download CommonLib (CharmedBaryon)
         shell: pwsh
         run: |
-          # Download the source ZIP directly
-          Invoke-WebRequest -Uri "https://github.com/CharmedBaryon/CommonLibSSE-NG.git" -OutFile "commonlib.zip"
+          # Download the source ZIP from the correct repository
+          Invoke-WebRequest -Uri "https://github.com/CharmedBaryon/CommonLibSSE-NG/archive/refs/heads/main.zip" -OutFile "commonlib.zip"
           
           # Extract it
           Expand-Archive -Path "commonlib.zip" -DestinationPath "."
           
-          # Rename the extracted folder to something predictable
+          # The extracted folder name will be CommonLibSSE-NG-main
           Rename-Item -Path "CommonLibSSE-NG-main" -NewName "CommonLibSSE-NG"
 
       - name: Build with CMake
         shell: pwsh
         run: |
-          # Point CMake to the folder we just downloaded
+          # Pass the local path to CMake
           cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release `
             -DCOMMONLIB_LOCAL_PATH="$pwd/CommonLibSSE-NG"
