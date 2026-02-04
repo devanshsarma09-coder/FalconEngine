@@ -13,36 +13,17 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install Dependencies
-        shell: pwsh
-        run: |
-          # 1. Create a temporary ports directory
-          New-Item -ItemType Directory -Force -Path "./temp_ports/commonlibsse-ng"
-          
-          # 2. Download the commonlibsse-ng port files directly from GitHub
-          $baseUrl = "https://raw.githubusercontent.com/microsoft/vcpkg/master/ports/commonlibsse-ng"
-          Invoke-WebRequest -Uri "$baseUrl/portfile.cmake" -OutFile "./temp_ports/commonlibsse-ng/portfile.cmake"
-          Invoke-WebRequest -Uri "$baseUrl/vcpkg.json" -OutFile "./temp_ports/commonlibsse-ng/vcpkg.json"
-          
-          # 3. Install using the overlay-ports flag to point to the files we just downloaded
-          & "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe" install `
-            --overlay-ports="./temp_ports" `
-            commonlibsse-ng[skyrim-ae] `
-            --triplet x64-windows-static-md
-
       - name: Build with CMake
         shell: pwsh
         run: |
-          cmake -B build -S . `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET=x64-windows-static-md `
-            -DOVERLAY_PORTS="./temp_ports"
+          # Create build directory
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
           
+          # Compile the project
           cmake --build build --config Release
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
         with:
           name: FalconEngine-Plugin
-          path: "**/build/Release/FalconEngine.dll"
+          path: build/Release/FalconEngine.dll
