@@ -9,25 +9,25 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Manually Download CommonLib (CharmedBaryon)
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri "https://github.com/CharmedBaryon/CommonLibSSE-NG/archive/refs/heads/main.zip" -OutFile "commonlib.zip"
-          Expand-Archive -Path "commonlib.zip" -DestinationPath "."
-          Rename-Item -Path "CommonLibSSE-NG-main" -NewName "CommonLibSSE-NG"
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: 'vcpkg.json'
 
-      - name: Build with CMake
+      - name: Run CMake
         shell: pwsh
         run: |
-          # Pass the local path AND force it to download spdlog/fmt/xbyak
           cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCOMMONLIB_LOCAL_PATH="$pwd/CommonLibSSE-NG" `
-            -DCOMMONLIB_EXTERNAL_DEPENDENCIES=ON
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static-md `
+            -DSKYRIM_AE=ON
           
           cmake --build build --config Release
 
