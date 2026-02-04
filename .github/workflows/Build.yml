@@ -16,13 +16,18 @@ jobs:
       - name: Install Dependencies
         shell: pwsh
         run: |
-          # Create a local registry to bypass the 128 Git error
-          $repoRoot = "${{ github.workspace }}"
+          # 1. Create a temporary ports directory
+          New-Item -ItemType Directory -Force -Path "./temp_ports/commonlibsse-ng"
           
-          # Force vcpkg to use its own internal baseline instead of a remote one
+          # 2. Download the commonlibsse-ng port files directly from GitHub
+          $baseUrl = "https://raw.githubusercontent.com/microsoft/vcpkg/master/ports/commonlibsse-ng"
+          Invoke-WebRequest -Uri "$baseUrl/portfile.cmake" -OutFile "./temp_ports/commonlibsse-ng/portfile.cmake"
+          Invoke-WebRequest -Uri "$baseUrl/vcpkg.json" -OutFile "./temp_ports/commonlibsse-ng/vcpkg.json"
+          
+          # 3. Install using the overlay-ports flag to point to the files we just downloaded
           & "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe" install `
-            --x-manifest-root="$repoRoot" `
-            --vcpkg-root="$env:VCPKG_INSTALLATION_ROOT" `
+            --overlay-ports="./temp_ports" `
+            commonlibsse-ng[skyrim-ae] `
             --triplet x64-windows-static-md
 
       - name: Build with CMake
@@ -32,7 +37,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static-md `
-            -DVCPKG_MANIFEST_MODE=ON
+            -DOVERLAY_PORTS="./temp_ports"
           
           cmake --build build --config Release
 
