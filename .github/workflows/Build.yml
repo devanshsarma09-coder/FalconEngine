@@ -17,6 +17,8 @@ jobs:
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgJsonGlob: 'vcpkg.json'
+          # This ensures it uses the manifest file we just made
+          runVcpkgInstall: true 
 
       - name: Build with CMake
         uses: lukka/run-cmake@v10
