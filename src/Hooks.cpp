@@ -1,5 +1,4 @@
 
-// src/Hooks.cpp
 #include "Hooks.h"
 #include "MovementHandler.h"
 #include "InputHandler.h"
@@ -21,6 +20,10 @@ namespace FalconEngine {
         if (!ship) {
             auto found = RE::TESForm::LookupByID<RE::TESObjectREFR>(currentShipID);
             if (found) cachedShip = found->GetHandle();
+            return;
+        }
+        if (ship->IsDisabled() || ship->IsDeleted()) {
+            currentShipID = 0;
             return;
         }
         auto player = RE::PlayerCharacter::GetSingleton();
