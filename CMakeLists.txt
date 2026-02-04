@@ -4,8 +4,41 @@ project(FalconEngine VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find the CommonLib package provided by vcpkg
-find_package(commonlibsse-ng CONFIG REQUIRED)
+# Force Skyrim AE
+set(SKYRIM_AE ON CACHE BOOL "" FORCE)
+
+# Convert Windows paths to CMake-friendly forward slashes
+file(TO_CMAKE_PATH "${FMT_PATH}" SAFE_FMT_PATH)
+file(TO_CMAKE_PATH "${SPDLOG_PATH}" SAFE_SPDLOG_PATH)
+file(TO_CMAKE_PATH "${COMMONLIB_PATH}" SAFE_COMMONLIB_PATH)
+
+# 1. FMT
+message(STATUS "Pre-configuring FMT from: ${SAFE_FMT_PATH}")
+add_subdirectory(${SAFE_FMT_PATH} ${CMAKE_BINARY_DIR}/fmt EXCLUDE_FROM_ALL)
+list(APPEND CMAKE_PREFIX_PATH "${SAFE_FMT_PATH}")
+
+# 2. SPDLOG
+message(STATUS "Pre-configuring SPDLOG from: ${SAFE_SPDLOG_PATH}")
+set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "" FORCE)
+add_subdirectory(${SAFE_SPDLOG_PATH} ${CMAKE_BINARY_DIR}/spdlog EXCLUDE_FROM_ALL)
+list(APPEND CMAKE_PREFIX_PATH "${SAFE_SPDLOG_PATH}")
+
+# 3. MOCKING find_package (With safe forward slashes)
+file(WRITE "${CMAKE_BINARY_DIR}/spdlog/spdlogConfig.cmake" 
+    "include_directories(\"${SAFE_SPDLOG_PATH}/include\")\nadd_library(spdlog::spdlog ALIAS spdlog)\nset(spdlog_FOUND TRUE)"
+)
+file(WRITE "${CMAKE_BINARY_DIR}/fmt/fmtConfig.cmake" 
+    "include_directories(\"${SAFE_FMT_PATH}/include\")\nadd_library(fmt::fmt ALIAS fmt)\nset(fmt_FOUND TRUE)"
+)
+
+# Add these fake config paths to the search list
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/spdlog")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/fmt")
+
+# 4. CommonLibSSE-NG
+message(STATUS "Configuring CommonLib from: ${SAFE_COMMONLIB_PATH}")
+set(COMMONLIB_EXTERNAL_DEPENDENCIES OFF CACHE BOOL "" FORCE) 
+add_subdirectory(${SAFE_COMMONLIB_PATH} ${CMAKE_BINARY_DIR}/commonlib EXCLUDE_FROM_ALL)
 
 add_library(${PROJECT_NAME} SHARED
     "src/Main.cpp"
@@ -16,11 +49,17 @@ add_library(${PROJECT_NAME} SHARED
     "src/AIPathing.cpp"
 )
 
-# Link against CommonLib
-target_link_libraries(${PROJECT_NAME} PRIVATE commonlibsse-ng::commonlibsse-ng)
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    commonlibsse-ng::commonlibsse-ng
+    spdlog::spdlog
+    fmt::fmt
+)
 
-# Crucial for cloud builds: Define the target version
-target_compile_definitions(${PROJECT_NAME} PRIVATE SKSE_SUPPORT_XSE)
+target_compile_definitions(${PROJECT_NAME} PRIVATE 
+    SKSE_SUPPORT_XSE
+    UNICODE
+    _UNICODE
+)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES 
     SUFFIX ".dll"
