@@ -4,13 +4,13 @@ project(FalconEngine VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Force Skyrim AE support
+# Force Skyrim AE support and tell CommonLib to fetch its own deps
 set(SKYRIM_AE ON CACHE BOOL "" FORCE)
+set(COMMONLIB_EXTERNAL_DEPENDENCIES ON CACHE BOOL "" FORCE)
 
-# Check if we provided a local path via the build script
 if(DEFINED COMMONLIB_LOCAL_PATH)
     message(STATUS "Using local CommonLib from: ${COMMONLIB_LOCAL_PATH}")
-    # Add the subdirectory and set the binary dir to prevent contamination
+    # EXCLUDE_FROM_ALL prevents building CommonLib tests/samples
     add_subdirectory(${COMMONLIB_LOCAL_PATH} build/_deps/commonlibsse-ng-src EXCLUDE_FROM_ALL)
 else()
     include(FetchContent)
