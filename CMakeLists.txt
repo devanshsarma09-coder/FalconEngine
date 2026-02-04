@@ -4,10 +4,19 @@ project(FalconEngine VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# This must come BEFORE find_package
-set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "")
+include(FetchContent)
 
-find_package(commonlibsse-ng CONFIG REQUIRED)
+# Automatically download CommonLibSSE-NG
+FetchContent_Declare(
+    commonlibsse-ng
+    GIT_REPOSITORY https://github.com/p13373/CommonLibSSE-NG.git
+    GIT_TAG        main
+)
+
+# This flag is required to make CommonLib build correctly without vcpkg
+set(SKYRIM_AE ON CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(commonlibsse-ng)
 
 add_library(${PROJECT_NAME} SHARED
     "src/Main.cpp"
@@ -18,11 +27,11 @@ add_library(${PROJECT_NAME} SHARED
     "src/AIPathing.cpp"
 )
 
+# Link the downloaded library
 target_link_libraries(${PROJECT_NAME} PRIVATE commonlibsse-ng::commonlibsse-ng)
 
-# Ensure the compiler knows we are targeting Skyrim
-target_compile_definitions(${PROJECT_NAME} PRIVATE SKSE_SUPPORT_XSE)
-
+# Ensure the DLL suffix is correct
 set_target_properties(${PROJECT_NAME} PROPERTIES 
     SUFFIX ".dll"
+    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 )
