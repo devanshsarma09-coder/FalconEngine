@@ -14,12 +14,21 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Install Dependencies
+        shell: pwsh
         run: |
-          # Use the manifest file (vcpkg.json) to install everything at once
-          & "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe" install --x-manifest-root=. --triplet x64-windows-static-md
+          # Define the root of your repo
+          $repoRoot = "${{ github.workspace }}"
+          
+          # Force vcpkg to install using the manifest in your repo
+          & "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe" install `
+            --x-manifest-root="$repoRoot" `
+            --vcpkg-root="$env:VCPKG_INSTALLATION_ROOT" `
+            --triplet x64-windows-static-md
 
       - name: Build with CMake
+        shell: pwsh
         run: |
+          $repoRoot = "${{ github.workspace }}"
           cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
