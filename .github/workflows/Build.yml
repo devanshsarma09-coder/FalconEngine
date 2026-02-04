@@ -13,21 +13,18 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Run vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgJsonGlob: 'vcpkg.json'
-          # This ensures it uses the manifest file we just made
-          runVcpkgInstall: true 
-
       - name: Build with CMake
-        uses: lukka/run-cmake@v10
-        with:
-          configurePreset: 'default'
-          buildPreset: 'default'
+        run: |
+          cmake -B build -S . `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static `
+            -DCMAKE_CXX_FLAGS="/EHsc"
+          
+          cmake --build build --config Release
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
         with:
           name: FalconEngine-Plugin
-          path: build/Release/FalconEngine.dl
+          path: build/Release/FalconEngine.dll
