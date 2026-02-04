@@ -13,10 +13,15 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Configure Git
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+
       - name: Build with CMake
         shell: pwsh
         run: |
-          # Create build directory
+          # Create build directory and configure
           cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
           
           # Compile the project
