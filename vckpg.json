@@ -1,11 +1,12 @@
-
 {
   "name": "falcon-engine",
   "version": "0.1.0",
   "dependencies": [
     {
       "name": "commonlibsse-ng",
-      "features": ["skyrim-ae"]
+      "features": [
+        "skyrim-ae"
+      ]
     }
   ],
   "builtin-baseline": "8646698665f80e0c1f240213d28945654928b9d3"
