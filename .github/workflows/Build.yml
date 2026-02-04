@@ -13,13 +13,17 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Install Dependencies (vcpkg)
+        run: |
+          # Manually trigger vcpkg to install commonlibsse-ng
+          & "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe" install commonlibsse-ng[skyrim-ae] --triplet x64-windows-static-md
+
       - name: Build with CMake
         run: |
           cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET=x64-windows-static `
-            -DCMAKE_CXX_FLAGS="/EHsc"
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
           
           cmake --build build --config Release
 
