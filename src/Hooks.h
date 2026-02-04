@@ -1,6 +1,6 @@
-// src/Hooks.h
 #pragma once
 #include "RE/Skyrim.h"
+
 namespace FalconEngine {
     class Hooks {
     public:
@@ -12,5 +12,3 @@ namespace FalconEngine {
         static inline REL::Relocation<decltype(Update)> _Update;
     };
 }
-
-
