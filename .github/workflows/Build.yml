@@ -16,22 +16,18 @@ jobs:
       - name: Manually Download CommonLib (CharmedBaryon)
         shell: pwsh
         run: |
-          # Download the source ZIP from the correct repository
           Invoke-WebRequest -Uri "https://github.com/CharmedBaryon/CommonLibSSE-NG/archive/refs/heads/main.zip" -OutFile "commonlib.zip"
-          
-          # Extract it
           Expand-Archive -Path "commonlib.zip" -DestinationPath "."
-          
-          # The extracted folder name will be CommonLibSSE-NG-main
           Rename-Item -Path "CommonLibSSE-NG-main" -NewName "CommonLibSSE-NG"
 
       - name: Build with CMake
         shell: pwsh
         run: |
-          # Pass the local path to CMake
+          # Pass the local path AND force it to download spdlog/fmt/xbyak
           cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCOMMONLIB_LOCAL_PATH="$pwd/CommonLibSSE-NG"
+            -DCOMMONLIB_LOCAL_PATH="$pwd/CommonLibSSE-NG" `
+            -DCOMMONLIB_EXTERNAL_DEPENDENCIES=ON
           
           cmake --build build --config Release
 
