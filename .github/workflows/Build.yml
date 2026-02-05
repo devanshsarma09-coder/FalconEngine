@@ -18,36 +18,41 @@ jobs:
         run: |
           # 1. CommonLibSSE-NG
           Invoke-WebRequest -Uri "https://github.com/CharmedBaryon/CommonLibSSE-NG/archive/refs/heads/main.zip" -OutFile "commonlib.zip"
-          Expand-Archive -Path "commonlib.zip" -DestinationPath "$pwd"
+          Expand-Archive -Path "commonlib.zip" -DestinationPath "."
           Rename-Item -Path "CommonLibSSE-NG-main" -NewName "CommonLibSSE-NG"
 
           # 2. spdlog
           Invoke-WebRequest -Uri "https://github.com/gabime/spdlog/archive/refs/tags/v1.12.0.zip" -OutFile "spdlog.zip"
-          Expand-Archive -Path "spdlog.zip" -DestinationPath "$pwd"
+          Expand-Archive -Path "spdlog.zip" -DestinationPath "."
           Rename-Item -Path "spdlog-1.12.0" -NewName "spdlog"
 
           # 3. fmt
           Invoke-WebRequest -Uri "https://github.com/fmtlib/fmt/archive/refs/tags/10.1.1.zip" -OutFile "fmt.zip"
-          Expand-Archive -Path "fmt.zip" -DestinationPath "$pwd"
+          Expand-Archive -Path "fmt.zip" -DestinationPath "."
           Rename-Item -Path "fmt-10.1.1" -NewName "fmt"
 
           # 4. RapidCSV
           Invoke-WebRequest -Uri "https://github.com/d99kris/rapidcsv/archive/refs/heads/master.zip" -OutFile "rapidcsv.zip"
-          Expand-Archive -Path "rapidcsv.zip" -DestinationPath "$pwd"
+          Expand-Archive -Path "rapidcsv.zip" -DestinationPath "."
           Rename-Item -Path "rapidcsv-master" -NewName "rapidcsv"
 
-          # --- THE CRITICAL FIX ---
-          # Inject a dummy Catch.cmake directly into CommonLib's cmake folder
-          $catchContent = "macro(catch_discover_tests)`n  message(STATUS `"Mocked catch_discover_tests`")`nendmacro()"
-          New-Item -ItemType Directory -Force -Path "CommonLibSSE-NG/cmake"
-          Set-Content -Path "CommonLibSSE-NG/cmake/Catch.cmake" -Value $catchContent
+          # --- NUCLEAR FIX: Create a force-include script ---
+          $fixScript = @"
+          macro(catch_discover_tests)
+            message(STATUS "Global Mock: catch_discover_tests ignored")
+          endmacro()
+          # Define a dummy variable so the include(Catch) doesn't fail if it finds nothing
+          set(Catch_FOUND TRUE)
+"@
+          Set-Content -Path "fix_cmake.cmake" -Value $fixScript
 
       - name: Build with CMake
         shell: pwsh
         run: |
-          $repoRoot = Get-Location
+          $repoRoot = (Get-Item .).FullName
           cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PROJECT_INCLUDE_BEFORE="$repoRoot/fix_cmake.cmake" `
             -DCOMMONLIB_PATH="$repoRoot/CommonLibSSE-NG" `
             -DSPDLOG_PATH="$repoRoot/spdlog" `
             -DFMT_PATH="$repoRoot/fmt" `
