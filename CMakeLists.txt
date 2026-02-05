@@ -4,12 +4,12 @@ project(FalconEngine VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Force Skyrim AE and Disable Tests to avoid Catch2 requirement
 set(SKYRIM_AE ON CACHE BOOL "" FORCE)
+# Try harder to kill tests
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(COMMONLIB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
-# Convert Windows paths to CMake-friendly forward slashes
+# Convert paths
 file(TO_CMAKE_PATH "${FMT_PATH}" SAFE_FMT_PATH)
 file(TO_CMAKE_PATH "${SPDLOG_PATH}" SAFE_SPDLOG_PATH)
 file(TO_CMAKE_PATH "${COMMONLIB_PATH}" SAFE_COMMONLIB_PATH)
@@ -23,15 +23,16 @@ message(STATUS "Pre-configuring SPDLOG from: ${SAFE_SPDLOG_PATH}")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "" FORCE)
 add_subdirectory(${SAFE_SPDLOG_PATH} ${CMAKE_BINARY_DIR}/spdlog EXCLUDE_FROM_ALL)
 
-# 3. MOCKING find_package (Minimalist approach)
-# We just need to tell CommonLib that these are FOUND. 
-# Since we already ran add_subdirectory, the targets exist in memory.
+# 3. MOCKING find_package (Now with Catch2!)
 file(WRITE "${CMAKE_BINARY_DIR}/spdlog/spdlogConfig.cmake" "set(spdlog_FOUND TRUE)")
 file(WRITE "${CMAKE_BINARY_DIR}/fmt/fmtConfig.cmake" "set(fmt_FOUND TRUE)")
+# This is the new line that fixes your error:
+file(WRITE "${CMAKE_BINARY_DIR}/Catch2/Catch2Config.cmake" "set(Catch2_FOUND TRUE)")
 
-# Add these fake config paths to the search list
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/spdlog")
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/fmt")
+# Add the fake Catch2 path
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/Catch2")
 
 # 4. CommonLibSSE-NG
 message(STATUS "Configuring CommonLib from: ${SAFE_COMMONLIB_PATH}")
@@ -47,7 +48,6 @@ add_library(${PROJECT_NAME} SHARED
     "src/AIPathing.cpp"
 )
 
-# Use the namespaced targets provided by the subdirectories
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     commonlibsse-ng::commonlibsse-ng
     spdlog::spdlog
