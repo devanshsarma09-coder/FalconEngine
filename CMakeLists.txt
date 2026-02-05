@@ -5,11 +5,10 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SKYRIM_AE ON CACHE BOOL "" FORCE)
-# Disable tests as much as possible
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(COMMONLIB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
-# Paths
+# Convert Windows paths
 file(TO_CMAKE_PATH "${FMT_PATH}" SAFE_FMT_PATH)
 file(TO_CMAKE_PATH "${SPDLOG_PATH}" SAFE_SPDLOG_PATH)
 file(TO_CMAKE_PATH "${COMMONLIB_PATH}" SAFE_COMMONLIB_PATH)
@@ -22,21 +21,18 @@ add_subdirectory(${SAFE_FMT_PATH} ${CMAKE_BINARY_DIR}/fmt EXCLUDE_FROM_ALL)
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "" FORCE)
 add_subdirectory(${SAFE_SPDLOG_PATH} ${CMAKE_BINARY_DIR}/spdlog EXCLUDE_FROM_ALL)
 
-# 3. RAPIDCSV (Fixes the NOTFOUND error)
+# 3. RAPIDCSV
 set(RAPIDCSV_INCLUDE_DIRS "${SAFE_RAPIDCSV_PATH}/src" CACHE PATH "" FORCE)
 
-# 4. MOCKING & ALIASING
-# Trick CommonLib into finding spdlog/fmt
+# 4. MOCKING find_package (Minimalist)
 file(WRITE "${CMAKE_BINARY_DIR}/spdlog/spdlogConfig.cmake" "set(spdlog_FOUND TRUE)")
 file(WRITE "${CMAKE_BINARY_DIR}/fmt/fmtConfig.cmake" "set(fmt_FOUND TRUE)")
-# Trick CommonLib into finding Catch2
 file(WRITE "${CMAKE_BINARY_DIR}/Catch2/Catch2Config.cmake" "set(Catch2_FOUND TRUE)")
 
-# Create a FAKE Catch2 target so the linker doesn't crash
-add_library(Catch2_Fake INTERFACE)
-add_library(Catch2::Catch2 ALIAS Catch2_Fake)
+# Placeholder for Catch2 target
+add_library(Catch2_Mock INTERFACE)
+add_library(Catch2::Catch2 ALIAS Catch2_Mock)
 
-# Add search paths
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/spdlog")
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/fmt")
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/Catch2")
@@ -54,7 +50,7 @@ add_library(${PROJECT_NAME} SHARED
     "src/AIPathing.cpp"
 )
 
-# LINK FIX: Use "CommonLibSSE" (the internal name) instead of the namespaced one
+# Use the internal target name
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     CommonLibSSE
     spdlog::spdlog
