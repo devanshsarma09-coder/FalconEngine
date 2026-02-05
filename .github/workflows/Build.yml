@@ -13,28 +13,37 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Manual Dependencies
+      - name: Download Headers
         shell: pwsh
         run: |
-          # Download only what we strictly need for the compiler to see headers
+          # Download CommonLib
           Invoke-WebRequest -Uri "https://github.com/CharmedBaryon/CommonLibSSE-NG/archive/refs/heads/main.zip" -OutFile "cl.zip"
-          Expand-Archive cl.zip .; Rename-Item "CommonLibSSE-NG-main" "CommonLib"
+          Expand-Archive cl.zip .
+          Rename-Item "CommonLibSSE-NG-main" "CommonLib"
 
+          # Download spdlog
           Invoke-WebRequest -Uri "https://github.com/gabime/spdlog/archive/refs/tags/v1.12.0.zip" -OutFile "spd.zip"
-          Expand-Archive spd.zip .; Rename-Item "spdlog-1.12.0" "spdlog"
+          Expand-Archive spd.zip .
+          Rename-Item "spdlog-1.12.0" "spdlog"
 
+          # Download fmt
           Invoke-WebRequest -Uri "https://github.com/fmtlib/fmt/archive/refs/tags/10.1.1.zip" -OutFile "fmt.zip"
-          Expand-Archive fmt.zip .; Rename-Item "fmt-10.1.1" "fmt"
+          Expand-Archive fmt.zip .
+          Rename-Item "fmt-10.1.1" "fmt"
 
-      - name: Simple CMake Build
+      - name: Build DLL
         shell: pwsh
         run: |
-          # A minimal CMake call that ignores all the internal CommonLib baggage
+          $repoRoot = (Get-Item .).FullName
           cmake -B build -S . `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DCOMMONLIB_PATH="$pwd/CommonLib" `
-            -DSPDLOG_PATH="$pwd/spdlog" `
-            -DFMT_PATH="$pwd/fmt" `
-            -DBUILD_TESTING=OFF
+            -DCOMMONLIB_PATH="$repoRoot/CommonLib" `
+            -DSPDLOG_PATH="$repoRoot/spdlog" `
+            -DFMT_PATH="$repoRoot/fmt"
           
           cmake --build build --config Release
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: FalconEngine-Plugin
+          path: build/Release/FalconEngine.dll
