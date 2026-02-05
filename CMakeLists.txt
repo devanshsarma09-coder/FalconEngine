@@ -24,12 +24,11 @@ add_subdirectory(${SAFE_SPDLOG_PATH} ${CMAKE_BINARY_DIR}/spdlog EXCLUDE_FROM_ALL
 # 3. RAPIDCSV
 set(RAPIDCSV_INCLUDE_DIRS "${SAFE_RAPIDCSV_PATH}/src" CACHE PATH "" FORCE)
 
-# 4. MOCKING find_package (Minimalist)
+# 4. MOCKING find_package
 file(WRITE "${CMAKE_BINARY_DIR}/spdlog/spdlogConfig.cmake" "set(spdlog_FOUND TRUE)")
 file(WRITE "${CMAKE_BINARY_DIR}/fmt/fmtConfig.cmake" "set(fmt_FOUND TRUE)")
 file(WRITE "${CMAKE_BINARY_DIR}/Catch2/Catch2Config.cmake" "set(Catch2_FOUND TRUE)")
 
-# Placeholder for Catch2 target
 add_library(Catch2_Mock INTERFACE)
 add_library(Catch2::Catch2 ALIAS Catch2_Mock)
 
@@ -39,6 +38,11 @@ list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/Catch2")
 
 # 5. CommonLibSSE-NG
 set(COMMONLIB_EXTERNAL_DEPENDENCIES OFF CACHE BOOL "" FORCE) 
+
+# Last-ditch: Define the missing function AGAIN right before adding CommonLib
+macro(catch_discover_tests)
+endmacro()
+
 add_subdirectory(${SAFE_COMMONLIB_PATH} ${CMAKE_BINARY_DIR}/commonlib EXCLUDE_FROM_ALL)
 
 add_library(${PROJECT_NAME} SHARED
@@ -50,7 +54,6 @@ add_library(${PROJECT_NAME} SHARED
     "src/AIPathing.cpp"
 )
 
-# Use the internal target name
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     CommonLibSSE
     spdlog::spdlog
