@@ -13,57 +13,28 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Download Dependencies
+      - name: Manual Dependencies
         shell: pwsh
         run: |
-          # 1. CommonLibSSE-NG
-          Invoke-WebRequest -Uri "https://github.com/CharmedBaryon/CommonLibSSE-NG/archive/refs/heads/main.zip" -OutFile "commonlib.zip"
-          Expand-Archive -Path "commonlib.zip" -DestinationPath "."
-          Rename-Item -Path "CommonLibSSE-NG-main" -NewName "CommonLibSSE-NG"
+          # Download only what we strictly need for the compiler to see headers
+          Invoke-WebRequest -Uri "https://github.com/CharmedBaryon/CommonLibSSE-NG/archive/refs/heads/main.zip" -OutFile "cl.zip"
+          Expand-Archive cl.zip .; Rename-Item "CommonLibSSE-NG-main" "CommonLib"
 
-          # 2. spdlog
-          Invoke-WebRequest -Uri "https://github.com/gabime/spdlog/archive/refs/tags/v1.12.0.zip" -OutFile "spdlog.zip"
-          Expand-Archive -Path "spdlog.zip" -DestinationPath "."
-          Rename-Item -Path "spdlog-1.12.0" -NewName "spdlog"
+          Invoke-WebRequest -Uri "https://github.com/gabime/spdlog/archive/refs/tags/v1.12.0.zip" -OutFile "spd.zip"
+          Expand-Archive spd.zip .; Rename-Item "spdlog-1.12.0" "spdlog"
 
-          # 3. fmt
           Invoke-WebRequest -Uri "https://github.com/fmtlib/fmt/archive/refs/tags/10.1.1.zip" -OutFile "fmt.zip"
-          Expand-Archive -Path "fmt.zip" -DestinationPath "."
-          Rename-Item -Path "fmt-10.1.1" -NewName "fmt"
+          Expand-Archive fmt.zip .; Rename-Item "fmt-10.1.1" "fmt"
 
-          # 4. RapidCSV
-          Invoke-WebRequest -Uri "https://github.com/d99kris/rapidcsv/archive/refs/heads/master.zip" -OutFile "rapidcsv.zip"
-          Expand-Archive -Path "rapidcsv.zip" -DestinationPath "."
-          Rename-Item -Path "rapidcsv-master" -NewName "rapidcsv"
-
-          # --- NUCLEAR FIX: Create a force-include script ---
-          $fixScript = @"
-          macro(catch_discover_tests)
-            message(STATUS "Global Mock: catch_discover_tests ignored")
-          endmacro()
-          # Define a dummy variable so the include(Catch) doesn't fail if it finds nothing
-          set(Catch_FOUND TRUE)
-"@
-          Set-Content -Path "fix_cmake.cmake" -Value $fixScript
-
-      - name: Build with CMake
+      - name: Simple CMake Build
         shell: pwsh
         run: |
-          $repoRoot = (Get-Item .).FullName
+          # A minimal CMake call that ignores all the internal CommonLib baggage
           cmake -B build -S . `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_PROJECT_INCLUDE_BEFORE="$repoRoot/fix_cmake.cmake" `
-            -DCOMMONLIB_PATH="$repoRoot/CommonLibSSE-NG" `
-            -DSPDLOG_PATH="$repoRoot/spdlog" `
-            -DFMT_PATH="$repoRoot/fmt" `
-            -DRAPIDCSV_PATH="$repoRoot/rapidcsv" `
-            -DBUILD_TESTING=OFF `
-            -DCOMMONLIB_BUILD_TESTS=OFF
+            -DCOMMONLIB_PATH="$pwd/CommonLib" `
+            -DSPDLOG_PATH="$pwd/spdlog" `
+            -DFMT_PATH="$pwd/fmt" `
+            -DBUILD_TESTING=OFF
           
           cmake --build build --config Release
-
-      - name: Upload DLL
-        uses: actions/upload-artifact@v4
-        with:
-          name: FalconEngine-Plugin
-          path: build/Release/FalconEngine.dll
