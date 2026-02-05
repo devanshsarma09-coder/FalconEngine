@@ -13,23 +13,28 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Download Build Dependencies
+      - name: Download Dependencies
         shell: pwsh
         run: |
-          # Download CommonLibSSE-NG
+          # 1. CommonLibSSE-NG
           Invoke-WebRequest -Uri "https://github.com/CharmedBaryon/CommonLibSSE-NG/archive/refs/heads/main.zip" -OutFile "commonlib.zip"
-          Expand-Archive -Path "commonlib.zip" -DestinationPath "."
+          Expand-Archive -Path "commonlib.zip" -DestinationPath "$pwd"
           Rename-Item -Path "CommonLibSSE-NG-main" -NewName "CommonLibSSE-NG"
 
-          # Download spdlog
+          # 2. spdlog
           Invoke-WebRequest -Uri "https://github.com/gabime/spdlog/archive/refs/tags/v1.12.0.zip" -OutFile "spdlog.zip"
-          Expand-Archive -Path "spdlog.zip" -DestinationPath "."
+          Expand-Archive -Path "spdlog.zip" -DestinationPath "$pwd"
           Rename-Item -Path "spdlog-1.12.0" -NewName "spdlog"
 
-          # Download fmt
+          # 3. fmt
           Invoke-WebRequest -Uri "https://github.com/fmtlib/fmt/archive/refs/tags/10.1.1.zip" -OutFile "fmt.zip"
-          Expand-Archive -Path "fmt.zip" -DestinationPath "."
+          Expand-Archive -Path "fmt.zip" -DestinationPath "$pwd"
           Rename-Item -Path "fmt-10.1.1" -NewName "fmt"
+
+          # 4. RapidCSV (THE MISSING PIECE)
+          Invoke-WebRequest -Uri "https://github.com/d99kris/rapidcsv/archive/refs/heads/master.zip" -OutFile "rapidcsv.zip"
+          Expand-Archive -Path "rapidcsv.zip" -DestinationPath "$pwd"
+          Rename-Item -Path "rapidcsv-master" -NewName "rapidcsv"
 
       - name: Build with CMake
         shell: pwsh
@@ -39,7 +44,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release `
             -DCOMMONLIB_PATH="$repoRoot/CommonLibSSE-NG" `
             -DSPDLOG_PATH="$repoRoot/spdlog" `
-            -DFMT_PATH="$repoRoot/fmt"
+            -DFMT_PATH="$repoRoot/fmt" `
+            -DRAPIDCSV_PATH="$repoRoot/rapidcsv"
           
           cmake --build build --config Release
 
