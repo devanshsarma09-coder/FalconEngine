@@ -5,14 +5,30 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SKYRIM_AE ON CACHE BOOL "" FORCE)
-# Try harder to kill tests
+# Force tests off
 set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(COMMONLIB_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
-# Convert paths
+# Convert Windows paths to CMake-friendly forward slashes
 file(TO_CMAKE_PATH "${FMT_PATH}" SAFE_FMT_PATH)
 file(TO_CMAKE_PATH "${SPDLOG_PATH}" SAFE_SPDLOG_PATH)
 file(TO_CMAKE_PATH "${COMMONLIB_PATH}" SAFE_COMMONLIB_PATH)
+
+# --- THE FIX: Create a fake "Catch" module ---
+# 1. Create the directory for our fake module
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/cmake_mocks")
+
+# 2. Write a fake Catch.cmake that defines the missing function as a "do nothing" macro
+file(WRITE "${CMAKE_BINARY_DIR}/cmake_mocks/Catch.cmake" 
+    "macro(catch_discover_tests)\n"
+    "  message(STATUS \"Mocking catch_discover_tests\")\n"
+    "endmacro()"
+)
+
+# 3. Tell CMake to look in our fake folder when it runs include()
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_BINARY_DIR}/cmake_mocks")
+
+# --- END FIX ---
 
 # 1. FMT
 message(STATUS "Pre-configuring FMT from: ${SAFE_FMT_PATH}")
@@ -23,15 +39,14 @@ message(STATUS "Pre-configuring SPDLOG from: ${SAFE_SPDLOG_PATH}")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "" FORCE)
 add_subdirectory(${SAFE_SPDLOG_PATH} ${CMAKE_BINARY_DIR}/spdlog EXCLUDE_FROM_ALL)
 
-# 3. MOCKING find_package (Now with Catch2!)
+# 3. MOCKING find_package
 file(WRITE "${CMAKE_BINARY_DIR}/spdlog/spdlogConfig.cmake" "set(spdlog_FOUND TRUE)")
 file(WRITE "${CMAKE_BINARY_DIR}/fmt/fmtConfig.cmake" "set(fmt_FOUND TRUE)")
-# This is the new line that fixes your error:
+# Mock Catch2 finding as well
 file(WRITE "${CMAKE_BINARY_DIR}/Catch2/Catch2Config.cmake" "set(Catch2_FOUND TRUE)")
 
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/spdlog")
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/fmt")
-# Add the fake Catch2 path
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/Catch2")
 
 # 4. CommonLibSSE-NG
