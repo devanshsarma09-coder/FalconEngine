@@ -31,10 +31,16 @@ jobs:
           Expand-Archive -Path "fmt.zip" -DestinationPath "$pwd"
           Rename-Item -Path "fmt-10.1.1" -NewName "fmt"
 
-          # 4. RapidCSV (THE MISSING PIECE)
+          # 4. RapidCSV
           Invoke-WebRequest -Uri "https://github.com/d99kris/rapidcsv/archive/refs/heads/master.zip" -OutFile "rapidcsv.zip"
           Expand-Archive -Path "rapidcsv.zip" -DestinationPath "$pwd"
           Rename-Item -Path "rapidcsv-master" -NewName "rapidcsv"
+
+          # --- THE CRITICAL FIX ---
+          # Inject a dummy Catch.cmake directly into CommonLib's cmake folder
+          $catchContent = "macro(catch_discover_tests)`n  message(STATUS `"Mocked catch_discover_tests`")`nendmacro()"
+          New-Item -ItemType Directory -Force -Path "CommonLibSSE-NG/cmake"
+          Set-Content -Path "CommonLibSSE-NG/cmake/Catch.cmake" -Value $catchContent
 
       - name: Build with CMake
         shell: pwsh
@@ -45,7 +51,9 @@ jobs:
             -DCOMMONLIB_PATH="$repoRoot/CommonLibSSE-NG" `
             -DSPDLOG_PATH="$repoRoot/spdlog" `
             -DFMT_PATH="$repoRoot/fmt" `
-            -DRAPIDCSV_PATH="$repoRoot/rapidcsv"
+            -DRAPIDCSV_PATH="$repoRoot/rapidcsv" `
+            -DBUILD_TESTING=OFF `
+            -DCOMMONLIB_BUILD_TESTS=OFF
           
           cmake --build build --config Release
 
